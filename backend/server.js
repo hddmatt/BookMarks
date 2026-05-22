@@ -219,6 +219,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Bookmarks app running at http://10.5.5.66:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Bookmarks app running at http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
 });

@@ -2181,15 +2181,18 @@ const defaultIconSvg = '🌍'
     }
 
     function handleDragStart(e) {
-      draggedItem = e.target;
-      e.target.classList.add('sorting');
-      e.dataTransfer.effectAllowed = 'move';
+      draggedItem = e.target.closest('.favorite-card');
+      if (draggedItem) {
+        draggedItem.classList.add('sorting');
+        e.dataTransfer.effectAllowed = 'move';
+      }
     }
 
     function handleDragEnd(e) {
-      e.target.classList.remove('sorting');
-      document.querySelectorAll('.favorite-card').forEach(card => {
-        card.classList.remove('drag-over');
+      const card = e.target.closest('.favorite-card');
+      if (card) card.classList.remove('sorting');
+      document.querySelectorAll('.favorite-card').forEach(c => {
+        c.classList.remove('drag-over');
       });
       draggedItem = null;
     }
@@ -2206,16 +2209,19 @@ const defaultIconSvg = '🌍'
     function handleDrop(e) {
       e.preventDefault();
       const dropTarget = e.target.closest('.favorite-card');
-      if (dropTarget && dropTarget !== draggedItem) {
+      if (dropTarget && dropTarget !== draggedItem && draggedItem) {
         const dragId = draggedItem.dataset.id;
         const dropId = dropTarget.dataset.id;
         const dragIndex = favorites.findIndex(f => f.id === dragId);
         const dropIndex = favorites.findIndex(f => f.id === dropId);
 
-        const [removed] = favorites.splice(dragIndex, 1);
-        favorites.splice(dropIndex, 0, removed);
-        saveData();
-        renderFavorites();
+        if (dragIndex !== -1 && dropIndex !== -1) {
+          const [removed] = favorites.splice(dragIndex, 1);
+          const insertIndex = dragIndex < dropIndex ? dropIndex - 1 : dropIndex;
+          favorites.splice(insertIndex, 0, removed);
+          saveData();
+          renderFavorites();
+        }
       }
     }
 

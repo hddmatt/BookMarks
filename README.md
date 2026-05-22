@@ -19,10 +19,17 @@
 ### 方式一：直接运行（Linux）
 
 ```bash
+# 安装 Node.js
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt-get install -y nodejs
+
+# 克隆项目
 git clone https://github.com/hddmatt/BookMarks.git /opt/BookMarks
+
+# 安装依赖并运行
 cd /opt/BookMarks/backend
 npm install
-bash start.sh
+node server.js
 ```
 
 访问 http://你的服务器IP:8010

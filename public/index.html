@@ -1,0 +1,2884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>收藏夹管理器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=system-ui,-apple-system,sans-serif" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --sidebar-bg: #fff;
+      --card-bg: #fff;
+      --border: #e0e0e0;
+      --primary: #2196f3;
+      --primary-hover: #1976d2;
+      --text: #333;
+      --text-secondary: #666;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 220px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+    }
+
+    .sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .sidebar-section { margin-bottom: 16px; }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      padding: 0 8px;
+    }
+
+    .category-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+      color: #333;
+      text-shadow: 0 0 1px rgba(255,255,255,0.5);
+    }
+
+    .category-item:hover { background: var(--bg); }
+    .category-item.active { background: #e3f2fd; }
+
+    .category-icon { font-size: 16px; }
+    .category-name { flex: 1; font-size: 14px; }
+    .category-count { font-size: 12px; color: var(--text-secondary); }
+
+    .category-actions {
+      display: none;
+      gap: 4px;
+      position: absolute;
+      right: 8px;
+    }
+
+    .category-item:hover .category-actions { display: flex; }
+
+    .category-action {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .category-action:hover { background: var(--border); color: var(--primary); }
+    .category-action.delete:hover { color: #f44336; }
+
+    .add-category-btn {
+      width: 100%;
+      padding: 10px;
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .add-category-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .sidebar-footer {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .sidebar-footer button {
+      flex: 1;
+      padding: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sidebar-footer button:hover {
+      background: var(--card-bg);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .main {
+      flex: 1;
+      margin-left: 220px;
+      padding: 24px 32px;
+    }
+
+    .main-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .page-title { font-size: 20px; font-weight: 600; }
+
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    .sort-btn {
+      padding: 8px 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .sort-btn:hover, .sort-btn.active {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .sort-btn svg { width: 14px; height: 14px; }
+
+    .search-box { position: relative; width: 220px; }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 14px 10px 36px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      height: 48px;
+      width: 100%;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: #fff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover { 
+      border-color: #2563eb; 
+      color: #2563eb;
+    }
+
+    .btn-danger {
+      background: #f44336;
+      color: #fff;
+    }
+    .btn-danger:hover { background: #d32f2f; }
+
+    .favorites-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .favorite-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .favorite-card:hover {
+      box-shadow: var(--shadow);
+      border-color: var(--primary);
+    }
+
+    .favorite-card.sorting {
+      opacity: 0.5;
+      border-style: dashed;
+    }
+
+    .favorite-card.drag-over {
+      border-color: var(--primary);
+      background: #e3f2fd;
+    }
+
+    .drag-handle {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 20px;
+      height: 20px;
+      color: var(--text-secondary);
+      cursor: grab;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .favorite-card:hover .drag-handle { opacity: 1; }
+    .drag-handle:active { cursor: grabbing; }
+
+    .favorite-card-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .favorite-card:hover .favorite-card-actions { opacity: 1; }
+
+    body.batch-mode .favorite-card-actions { display: none !important; }
+    body.batch-mode .favorite-card.selected { background: #fffde7; border-color: #fbc02d; }
+
+    .card-action {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: var(--bg);
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-action:hover { color: var(--primary); }
+    .card-action.delete:hover { color: #f44336; }
+
+    .favicon {
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      line-height: 1;
+    }
+
+    .favicon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+
+.favicon svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .favicon span, .favicon .default-icon {
+      font-size: 32px;
+      line-height: 1;
+    }
+
+    .favicon-preview .favicon svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .favorite-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .favorite-url {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .favorite-categories {
+      font-size: 12px;
+      margin-top: 4px;
+      color: var(--primary);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-title { font-size: 16px; margin-bottom: 8px; }
+    .empty-desc { color: var(--text-secondary); font-size: 14px; }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+    }
+
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+
+    .modal {
+      background: var(--sidebar-bg);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.active .modal { transform: scale(1); }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title { font-size: 16px; font-weight: 600; }
+
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .modal-close:hover { background: var(--bg); }
+
+    .modal-body { padding: 20px; }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .form-input:focus { outline: none; border-color: var(--primary); }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .emoji-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .emoji-option {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .emoji-option:hover { border-color: var(--primary); }
+    .emoji-option.selected { border-color: var(--primary); background: #e3f2fd; }
+
+    .color-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+    .color-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .color-option:hover { transform: scale(1.1); }
+    .color-option.selected { border-color: #333; box-shadow: 0 0 0 2px #fff; }
+
+    .favicon-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .favicon-preview .favicon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 0;
+      cursor: pointer;
+      position: relative;
+      font-size: 32px;
+      line-height: 1;
+    }
+
+    .favicon-preview .favicon:hover::after {
+      content: '编辑';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 10px;
+      padding: 2px;
+      text-align: center;
+      border-radius: 0 0 6px 6px;
+    }
+
+    .favicon-preview-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .favicon-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .favicon-actions button {
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .favicon-actions button:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .upload-icon-input { display: none; }
+
+    .modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .hamburger {
+      display: none;
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      width: 40px;
+      height: 40px;
+      background: var(--sidebar-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 60px 16px 24px; }
+      .hamburger { display: flex; }
+      .main-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .search-box { width: 100%; }
+      .header-actions { width: 100%; flex-wrap: wrap; }
+      .favorites-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 99;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar-overlay.active { display: block; }
+    }
+
+    .file-input { display: none; }
+
+    .category-checkbox-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .category-checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .category-checkbox-item:hover {
+      border-color: var(--primary);
+    }
+
+    .category-checkbox-item.selected {
+      border-color: var(--primary);
+      background: #e3f2fd;
+    }
+
+    .category-checkbox-item.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .category-checkbox-item input {
+      display: none;
+    }
+
+    .login-container {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      width: 1050px;
+      min-height: 100vh;
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
+    }
+
+    .login-container.active {
+      display: grid;
+    }
+
+    @media (max-width: 1050px) {
+      .login-container {
+        width: 100%;
+        max-width: 800px;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .login-container {
+        grid-template-columns: 1fr;
+        max-width: 450px;
+        margin: 0 auto;
+      }
+    }
+
+    .login-left-panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 36px;
+      background: linear-gradient(145deg, #1e3a8a 0%, #1e40af 50%, #6366f1 100%);
+      min-height: 100%;
+      overflow: hidden;
+    }
+
+    .login-characters {
+      position: relative;
+      width: 550px;
+      height: 400px;
+      margin: 0 auto;
+    }
+
+    .login-char {
+      position: absolute;
+      bottom: 0;
+      transition: all 0.7s ease-in-out;
+      transform-origin: bottom center;
+    }
+
+    .login-purple-char {
+      left: 70px;
+      width: 180px;
+      height: 400px;
+      background: #6C3FF5;
+      border-radius: 10px 10px 0 0;
+      z-index: 1;
+    }
+
+    .login-black-char {
+      left: 240px;
+      width: 120px;
+      height: 310px;
+      background: #2D2D2D;
+      border-radius: 8px 8px 0 0;
+      z-index: 2;
+    }
+
+    .login-orange-char {
+      left: 0;
+      width: 240px;
+      height: 200px;
+      background: #FF9B6B;
+      border-radius: 120px 120px 0 0;
+      z-index: 3;
+    }
+
+    .login-yellow-char {
+      left: 310px;
+      width: 140px;
+      height: 230px;
+      background: #E8D754;
+      border-radius: 70px 70px 0 0;
+      z-index: 4;
+    }
+
+    .login-eye-container {
+      position: absolute;
+      display: flex;
+      transition: left 0.3s ease-out, top 0.3s ease-out;
+    }
+
+    .login-eye {
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: height 0.15s ease;
+      background: white;
+    }
+
+    .login-pupil {
+      border-radius: 50%;
+      transition: transform 0.1s ease-out;
+    }
+
+    .login-pupil-dot {
+      border-radius: 50%;
+      transition: transform 0.1s ease-out;
+    }
+
+    .login-eye.blink {
+      height: 2px !important;
+    }
+
+    .login-bg-grid {
+      background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .login-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+    }
+
+    .login-blob-1 {
+      top: 25%;
+      right: 25%;
+      width: 256px;
+      height: 256px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .login-blob-2 {
+      bottom: 25%;
+      left: 25%;
+      width: 384px;
+      height: 384px;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .login-right-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 36px;
+      background: #f9fafb;
+      min-height: 100%;
+    }
+
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      position: relative;
+      z-index: 20;
+    }
+
+    .login-logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-captcha-number {
+      color: #2563eb;
+    }
+
+    .login-captcha-operator {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .login-refresh-btn {
+      padding: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6b7280;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .login-refresh-btn:hover {
+      color: #374151;
+      background: #f3f4f6;
+    }
+
+    .login-captcha-error {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 6px;
+      display: none;
+    }
+
+    .login-captcha-error.show {
+      display: block;
+    }
+
+    .login-error {
+      padding: 10px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      color: #ef4444;
+      font-size: 13px;
+      display: none;
+    }
+
+    .login-error.show {
+      display: block;
+    }
+
+    .login-btn {
+      height: 44px;
+      width: 100%;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+
+    .login-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .login-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .app.hidden {
+      display: none;
+    }
+
+    .btn-logout {
+      background: rgba(244, 67, 54, 0.15);
+      color: #dc2626;
+      border: 1px solid rgba(244, 67, 54, 0.3);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(244, 67, 54, 0.25);
+      border-color: #dc2626;
+    }
+
+    @media (max-width: 1024px) {
+      .login-left-panel {
+        display: none;
+      }
+      .login-right-panel {
+        padding: 32px;
+      }
+    }
+
+    .text-center { text-align: center; }
+    .mb-10 { margin-bottom: 2.5rem; }
+    .text-3xl { font-size: 1.875rem; }
+    .font-bold { font-weight: 700; }
+    .tracking-tight { letter-spacing: -0.025em; }
+    .text-gray-900 { color: #111827; }
+    .space-y-5 > * + * { margin-top: 1.25rem; }
+    .space-y-2 > * + * { margin-top: 0.5rem; }
+    .text-sm { font-size: 0.875rem; }
+    .font-medium { font-weight: 500; }
+    .text-gray-700 { color: #374151; }
+    .relative { position: relative; }
+    .absolute { position: absolute; }
+    .right-3 { right: 0.75rem; }
+    .top-1\/2 { top: 50%; }
+    .-translate-y-1\/2 { transform: translateY(-50%); }
+    .text-gray-400 { color: #9ca3af; }
+    .hover\:text-gray-600:hover { color: #4b5563; }
+    .login-input {
+      height: 48px;
+      padding: 0 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+      background: white;
+      box-sizing: border-box;
+    }
+
+    .login-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .login-input::placeholder {
+      color: #9ca3af;
+    }
+
+    .login-toggle-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .login-toggle-btn:hover {
+      color: #4b5563;
+      background: #f3f4f6;
+    }
+
+    .transition-colors { transition: color 0.2s; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .captcha-container { display: flex; align-items: center; gap: 12px; margin-bottom: 0; }
+    .captcha-display { display: flex; gap: 8px; padding: 8px 12px; background: #e5e7eb; border-radius: 8px; font-size: 20px; font-weight: bold; letter-spacing: 4px; color: #374151; user-select: none; }
+    .captcha-number { color: #2563eb; }
+    .captcha-operator { color: #6b7280; }
+    .btn-primary { height: 48px; width: 100%; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .error-box { padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 14px; display: none; }
+    .error-box.show { display: block; }
+    .captcha-error { color: #ef4444; font-size: 13px; margin-top: 8px; display: none; }
+    .captcha-error.show { display: block; }
+    .login-mouth-line { position: absolute; background: #2D2D2D; border-radius: 9999px; transition: left 0.5s ease-out; }
+  </style>
+</head>
+<body>
+  <div class="login-container" id="loginContainer">
+    <div class="login-left-panel">
+      <div class="relative" style="z-index: 20;">
+        <div class="flex items-center gap-2 text-lg font-semibold">
+          <div class="size-8 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            ✨
+          </div>
+          <span class="text-white font-bold">HDMatt Workspace</span>
+        </div>
+      </div>
+      <div class="relative z-20 flex items-end justify-center flex-1 py-12">
+        <div class="login-characters">
+          <div class="login-char login-purple-char" id="loginPurpleChar">
+            <div class="login-eye-container" id="loginPurpleEyes" style="left: 45px; top: 40px; gap: 32px;">
+              <div class="login-eye" id="loginPurpleEye1" style="width: 18px; height: 18px;">
+                <div class="login-pupil" id="loginPurplePupil1" style="width: 7px; height: 7px; background: #2D2D2D;"></div>
+              </div>
+              <div class="login-eye" id="loginPurpleEye2" style="width: 18px; height: 18px;">
+                <div class="login-pupil" id="loginPurplePupil2" style="width: 7px; height: 7px; background: #2D2D2D;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="login-char login-black-char" id="loginBlackChar">
+            <div class="login-eye-container" id="loginBlackEyes" style="left: 26px; top: 32px; gap: 24px;">
+              <div class="login-eye" id="loginBlackEye1" style="width: 16px; height: 16px;">
+                <div class="login-pupil" id="loginBlackPupil1" style="width: 6px; height: 6px; background: #2D2D2D;"></div>
+              </div>
+              <div class="login-eye" id="loginBlackEye2" style="width: 16px; height: 16px;">
+                <div class="login-pupil" id="loginBlackPupil2" style="width: 6px; height: 6px; background: #2D2D2D;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="login-char login-orange-char" id="loginOrangeChar">
+            <div class="login-eye-container" id="loginOrangeEyes" style="left: 82px; top: 90px; gap: 32px;">
+              <div class="login-pupil-dot" id="loginOrangePupil1" style="width: 12px; height: 12px; background: #2D2D2D;"></div>
+              <div class="login-pupil-dot" id="loginOrangePupil2" style="width: 12px; height: 12px; background: #2D2D2D;"></div>
+            </div>
+          </div>
+          <div class="login-char login-yellow-char" id="loginYellowChar">
+            <div class="login-eye-container" id="loginYellowEyes" style="left: 52px; top: 40px; gap: 24px;">
+              <div class="login-pupil-dot" id="loginYellowPupil1" style="width: 12px; height: 12px; background: #2D2D2D;"></div>
+              <div class="login-pupil-dot" id="loginYellowPupil2" style="width: 12px; height: 12px; background: #2D2D2D;"></div>
+            </div>
+            <div class="login-mouth-line" id="loginYellowMouth" style="left: 40px; top: 88px; width: 80px; height: 4px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="absolute inset-0 login-bg-grid"></div>
+      <div class="absolute login-blob" style="top: 25%; right: 25%; width: 256px; height: 256px; background: rgba(255,255,255,0.1);"></div>
+      <div class="absolute login-blob" style="bottom: 25%; left: 25%; width: 384px; height: 384px; background: rgba(255,255,255,0.05);"></div>
+    </div>
+    <div class="login-right-panel">
+      <div class="login-form-wrapper">
+        <div class="text-center mb-10">
+          <h1 class="text-3xl font-bold tracking-tight mb-2 text-gray-900">Sign in to Workspace</h1>
+        </div>
+        <form id="loginForm" class="space-y-5">
+          <div class="space-y-2">
+            <label for="loginUsername" class="text-sm font-medium text-gray-700">User</label>
+            <input type="text" id="loginUsername" placeholder="Enter your user" autocomplete="off" required class="login-input">
+          </div>
+          <div class="space-y-2">
+            <label for="loginPassword" class="text-sm font-medium text-gray-700">Password</label>
+            <div class="relative">
+              <input type="password" id="loginPassword" placeholder="••••••••" required class="login-input" style="padding-right: 44px;">
+              <button type="button" id="loginTogglePassword" class="login-toggle-btn">
+                <svg id="loginEyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-gray-700">Verification</label>
+            <div class="captcha-container">
+              <input type="text" id="loginCaptcha" placeholder="Enter the answer" required class="login-input" style="flex: 1;" maxlength="3">
+              <div class="captcha-display" id="loginCaptchaDisplay">
+                <span class="captcha-number" id="loginNum1">0</span>
+                <span class="captcha-operator">+</span>
+                <span class="captcha-number" id="loginNum2">0</span>
+                <span class="captcha-operator">=</span>
+                <span>?</span>
+              </div>
+              <button type="button" class="login-refresh-btn" id="loginRefreshCaptcha" title="Refresh">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 4v6h-6"></path>
+                  <path d="M1 20v-6h6"></path>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
+            <div class="captcha-error" id="loginCaptchaError">Incorrect answer, please try again.</div>
+          </div>
+          <div class="error-box" id="loginError">Invalid email or password. Please try again.</div>
+          <button type="button" class="btn-primary" id="loginBtn">Sign in</button>
+        </form>
+        <div style="text-align: center; margin-top: 16px;">
+          <a href="javascript:void(0)" id="changePwdLink" style="color: #2563eb; font-size: 13px; text-decoration: none;">修改用户名或密码</a>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="changePwdModal">
+    <div class="modal" style="max-width: 360px;">
+      <div class="modal-header">
+        <h2 class="modal-title">修改登录信息</h2>
+        <button class="modal-close" id="changePwdModalClose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="currentPassword">当前密码</label>
+          <input type="password" class="form-input" id="currentPassword" placeholder="请输入当前密码" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newUsername">新用户名</label>
+          <input type="text" class="form-input" id="newUsername" placeholder="请输入新用户名">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newPassword">新密码</label>
+          <input type="password" class="form-input" id="newPassword" placeholder="请输入新密码（至少4位）">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">确认新密码</label>
+          <input type="password" class="form-input" id="confirmPassword" placeholder="请再次输入新密码">
+        </div>
+        <div class="login-error" id="changePwdError" style="margin-top: 8px;">密码错误</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="changePwdCancel" style="padding: 8px 16px; font-size: 14px; height: auto; width: auto;">取消</button>
+        <button class="btn btn-primary" id="changePwdSave" style="padding: 8px 16px; font-size: 14px; height: auto; width: auto;">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app" id="app">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">收藏夹</div>
+      </div>
+
+      <div class="sidebar-content">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">收藏</div>
+          <div class="category-item active" data-category="all">
+            <span class="category-icon">📚</span>
+            <span class="category-name">全部收藏</span>
+            <span class="category-count" id="allCount">0</span>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">分类</div>
+          <div id="categoryList"></div>
+          <button class="add-category-btn" id="addCategoryBtn">+ 添加分类</button>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button id="exportBtn">导出</button>
+        <button id="importBtn">导入</button>
+        <input type="file" class="file-input" id="importFile" accept=".json,.html">
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="main-header">
+        <div class="header-left">
+          <h1 class="page-title" id="pageTitle">全部收藏</h1>
+          <button class="sort-btn" id="sortBtn" title="拖拽排序">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path>
+            </svg>
+            排序
+          </button>
+        </div>
+        <div class="header-actions">
+          <div class="search-box">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="M21 21l-4.35-4.35"></path>
+            </svg>
+            <input type="text" class="search-input" placeholder="搜索网址..." id="searchInput">
+          </div>
+          <button class="btn btn-primary" id="addFavoriteBtn" style="padding: 8px 16px; font-size: 14px; height: auto; width: auto;">+ 添加</button>
+          <button class="btn btn-secondary" id="batchManageBtn">批量管理</button>
+          <button class="btn btn-logout" id="logoutBtn">退出登录</button>
+          <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">删除选中 (0)</button>
+          <button class="btn btn-secondary" id="batchEditIconBtn" style="display: none;">修改图标</button>
+          <button class="btn btn-secondary" id="batchSetCategoryBtn" style="display: none;">设置分类</button>
+          <button class="btn btn-secondary" id="batchCancelBtn" style="display: none;">取消</button>
+        </div>
+      </div>
+
+      <div class="batch-toolbar" id="batchToolbar" style="display: none; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e0e0e0; align-items: center; gap: 12px;">
+        <span id="selectAllBtn" style="cursor: pointer; padding: 4px 8px; border-radius: 4px;">全选</span>
+        <span id="selectedCount" style="color: #666; font-size: 14px;">已选择 0 项</span>
+      </div>
+
+      <div class="favorites-grid" id="favoritesGrid"></div>
+
+      <div class="empty-state" id="emptyState" style="display: none;">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">暂无收藏</div>
+        <div class="empty-desc">点击右上角按钮添加第一个收藏</div>
+      </div>
+    </main>
+  </div>
+
+  <button class="hamburger" id="hamburger">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 12h18M3 6h18M3 18h18"></path>
+    </svg>
+  </button>
+
+  <div class="modal-overlay" id="favoriteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="favoriteModalTitle">添加网址</h2>
+        <button class="modal-close" id="favoriteModalClose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="favicon-preview" id="faviconPreview">
+          <div class="favicon" id="previewFavicon">🌐</div>
+          <div>
+            <span class="favicon-preview-text">点击更改图标</span>
+            <div class="favicon-actions">
+              <button type="button" id="uploadIconBtn">上传图片</button>
+              <button type="button" id="selectEmojiBtn">选择 Emoji</button>
+              <button type="button" id="autoFaviconBtn">自动获取</button>
+            </div>
+          </div>
+        </div>
+        <input type="file" class="upload-icon-input" id="uploadIconInput" accept="image/*">
+        <div class="form-group" id="faviconPickerGroup" style="display: none;">
+          <label class="form-label">选择图标</label>
+          <div class="emoji-picker" id="favEmojiPicker"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">标题</label>
+          <input type="text" class="form-input" id="favoriteTitle" placeholder="网站名称">
+        </div>
+        <div class="form-group">
+          <label class="form-label">网址</label>
+          <input type="url" class="form-input" id="favoriteUrl" placeholder="https://example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">分类（最多选3个）</label>
+          <div class="category-checkbox-list" id="categoryCheckboxList"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="favoriteModalCancel">取消</button>
+        <button class="btn btn-primary" id="favoriteModalSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="categoryModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="categoryModalTitle">添加分类</h2>
+        <button class="modal-close" id="categoryModalClose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">分类名称</label>
+          <input type="text" class="form-input" id="categoryName" placeholder="输入名称">
+        </div>
+        <div class="form-group">
+          <label class="form-label">图标</label>
+          <div class="emoji-picker" id="emojiPicker"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">颜色</label>
+          <div class="color-picker" id="colorPicker"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="categoryModalCancel">取消</button>
+        <button class="btn btn-primary" id="categoryModalSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="batchIconModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">批量修改图标</h2>
+        <button class="modal-close" id="batchIconModalClose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">选择图标</label>
+          <div class="emoji-picker" id="batchEmojiPicker"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="batchIconModalCancel">取消</button>
+        <button class="btn btn-primary" id="batchIconModalSave">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="batchCategoryModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">批量设置分类</h2>
+        <button class="modal-close" id="batchCategoryModalClose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">选择分类</label>
+          <div id="batchCategoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="batchCategoryModalCancel">取消</button>
+        <button class="btn btn-primary" id="batchCategoryModalSave">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal" style="max-width: 320px;">
+      <div class="modal-header">
+        <h2 class="modal-title">确认删除</h2>
+        <button class="modal-close" id="confirmModalClose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmText" style="color: var(--text-secondary); font-size: 14px;">确定要删除吗？</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="confirmModalCancel">取消</button>
+        <button class="btn" style="background: #f44336; color: #fff;" id="confirmModalConfirm">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    const TOKEN_KEY = 'bookmark_token';
+    const USER_KEY = 'bookmark_user';
+
+    if (!localStorage.getItem('bookmark_username')) {
+      localStorage.setItem('bookmark_username', 'admin');
+    }
+    if (!localStorage.getItem('bookmark_password')) {
+      localStorage.setItem('bookmark_password', 'admin');
+    }
+
+    async function api(endpoint, options = {}) {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+      if (res.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        checkLoginStatus();
+        throw new Error('Unauthorized');
+      }
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function checkAuthStatus() {
+      try {
+        const data = await api('/api/auth/status');
+        return data.registered;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function showLoading(show) {
+      let loading = document.getElementById('loadingOverlay');
+      if (!loading) {
+        loading = document.createElement('div');
+        loading.id = 'loadingOverlay';
+        loading.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+        loading.innerHTML = '<div style="background:#fff;padding:20px 40px;border-radius:8px;font-size:16px;">处理中...</div>';
+        document.body.appendChild(loading);
+      }
+      loading.style.display = show ? 'flex' : 'none';
+    }
+
+    let toastTimeout = null;
+    function showToast(message, duration = 3000) {
+      let toast = document.getElementById('toastOverlay');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toastOverlay';
+        toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:10000;opacity:0;transition:opacity 0.3s;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.style.opacity = '1';
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.style.opacity = '0';
+      }, duration);
+    }
+
+    async function loadFromServer() {
+      try {
+        const data = await api('/api/data');
+        categories = data.categories || [];
+        favorites = data.favorites || [];
+        favorites = favorites.map(f => {
+          if (f.categoryId && !f.categoryIds) return { ...f, categoryIds: [f.categoryId] };
+          return f;
+        });
+      } catch (e) {
+        console.error('Failed to load from server:', e);
+        showToast('加载数据失败，请刷新页面', 4000);
+      }
+    }
+
+    async function saveToServer() {
+      try {
+        await api('/api/data', { method: 'POST', body: JSON.stringify({ categories, favorites }) });
+      } catch (e) {
+        console.error('Failed to save to server:', e);
+        showToast('保存数据失败', 4000);
+      }
+    }
+
+    const EMOJIS = ['📁', '📂', '🌍', '💻', '🎨', '📝', '🔧', '📊', '📈', '🎮', '🎵', '📱', '💡', '🔒', '⭐', '🚀', '📺', '🎬', '📖', '🛒', '💰', '📧', '☁️', '🔗', '📌', '🎯', '💼', '🎓', '📚', '🔬', '🏠', '🏢', '🏗️', '🚗', '✈️', '🚀', '🎡', '🏖️', '🍔', '☕', '🍺', '🎂', '🎁', '❤️', '💔', '💪', '🧠', '👀', '👂', '👃', '👄', '👋', '👍', '👎', '👏', '🙌', '🤝', '💻', '🖥️', '⌨️', '🖱️', '📡', '📶', '📞', '☎️', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🎙️', '📸', '📷', '📹', '🎥', '🕐', '🕑', '🕒', '🕓', '🕔', '🕕', '🕖', '🕗', '🕘', '🔑', '🔒', '🔓', '🔏', '🔐', '📦', '📫', '📬', '📭', '📮', '🗳️', '✏️', '✒️', '🖋️', '🖊️', '📐', '📏', '📎', '🗂️', '🗃️', '🗄️', '🗑️', '💊', '💉', '🩺', '🩹', '🏥', '🌡️', '🌤️', '⛅', '🌥️', '☁️', '🌧️', '⛈️', '🌩️', '🌨️', '❄️', '🌪️'];
+const defaultIconSvg = '🌍'
+
+    let loginCaptchaNum1 = 0;
+    let loginCaptchaNum2 = 0;
+    let loginShowPassword = false;
+    let loginMouseX = 0;
+    let loginMouseY = 0;
+    let loginIsTyping = false;
+    let loginIsLookingAtEachOther = false;
+    let loginIsPurpleBlinking = false;
+    let loginIsBlackBlinking = false;
+    let loginPeekTimeout = null;
+    let loginPurpleBlinkTimeout = null;
+    let loginBlackBlinkTimeout = null;
+    let loginCaptchaExpireTime = 0;
+    let loginCaptchaInterval = null;
+
+    function checkCaptchaExpired() {
+      const now = Date.now();
+      if (now > loginCaptchaExpireTime && loginCaptchaExpireTime > 0) {
+        generateLoginCaptcha();
+        document.getElementById('loginCaptchaError').textContent = 'Verification expired, please retry.';
+        document.getElementById('loginCaptchaError').classList.add('show');
+        return true;
+      }
+      return false;
+    }
+
+    async function checkLoginStatus() {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const isLoggedIn = token && token.length > 0;
+      const loginContainer = document.getElementById('loginContainer');
+      const app = document.getElementById('app');
+      if (isLoggedIn) {
+        loginContainer.classList.remove('active');
+        app.classList.remove('hidden');
+        await loadFromServer();
+        renderCategories();
+        renderFavorites();
+      } else {
+        loginContainer.classList.add('active');
+        app.classList.add('hidden');
+      }
+    }
+
+    function generateLoginCaptcha() {
+      loginCaptchaNum1 = Math.floor(Math.random() * 9) + 1;
+      loginCaptchaNum2 = Math.floor(Math.random() * 9) + 1;
+      document.getElementById('loginNum1').textContent = loginCaptchaNum1;
+      document.getElementById('loginNum2').textContent = loginCaptchaNum2;
+      document.getElementById('loginCaptcha').value = '';
+      document.getElementById('loginCaptchaError').classList.remove('show');
+      loginCaptchaExpireTime = Date.now() + 60000;
+
+      if (loginCaptchaInterval) clearInterval(loginCaptchaInterval);
+      loginCaptchaInterval = setInterval(() => {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token || token.length === 0) {
+          if (checkCaptchaExpired()) {
+            clearInterval(loginCaptchaInterval);
+          }
+        }
+      }, 1000);
+    }
+
+    function updateLoginPupils() {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const deltaX = (loginMouseX - centerX) / centerX;
+      const deltaY = (loginMouseY - centerY) / centerY;
+
+      const purplePupils = document.querySelectorAll('#loginPurpleEyes .login-pupil');
+      purplePupils.forEach(pupil => {
+        pupil.style.transform = `translate(${deltaX * 4}px, ${deltaY * 4}px)`;
+      });
+
+      const blackPupils = document.querySelectorAll('#loginBlackEyes .login-pupil');
+      blackPupils.forEach(pupil => {
+        pupil.style.transform = `translate(${deltaX * 3}px, ${deltaY * 3}px)`;
+      });
+
+      const orangePupils = document.querySelectorAll('#loginOrangeEyes .login-pupil-dot');
+      orangePupils.forEach(pupil => {
+        pupil.style.transform = `translate(${deltaX * 5}px, ${deltaY * 5}px)`;
+      });
+
+      const yellowPupils = document.querySelectorAll('#loginYellowEyes .login-pupil-dot');
+      yellowPupils.forEach(pupil => {
+        pupil.style.transform = `translate(${deltaX * 5}px, ${deltaY * 5}px)`;
+      });
+
+      const moveX = deltaX * 3;
+      const moveY = deltaY * 2;
+      const purpleChar = document.getElementById('loginPurpleChar');
+      const blackChar = document.getElementById('loginBlackChar');
+      const orangeChar = document.getElementById('loginOrangeChar');
+      const yellowChar = document.getElementById('loginYellowChar');
+      
+      const passwordLength = document.getElementById('loginPassword').value.length;
+      const isShowingPassword = passwordLength > 0 && loginShowPassword;
+      const isInputting = loginIsTyping || (passwordLength > 0 && !loginShowPassword);
+      
+      if (purpleChar) {
+        let baseTransform = '';
+        if (isShowingPassword) baseTransform = 'skewX(0deg) ';
+        else if (isInputting && loginIsLookingAtEachOther) baseTransform = 'skewX(-12deg) translateX(20px) ';
+        else if (isInputting) baseTransform = 'skewX(-12deg) ';
+        purpleChar.style.transform = baseTransform + `translate(${moveX}px, ${moveY}px)`;
+      }
+      if (blackChar) {
+        let baseTransform = '';
+        if (isShowingPassword) baseTransform = 'skewX(0deg) ';
+        else if (loginIsLookingAtEachOther) baseTransform = 'skewX(10deg) translateX(10px) ';
+        else if (isInputting) baseTransform = 'skewX(10deg) ';
+        blackChar.style.transform = baseTransform + `translate(${moveX * 0.8}px, ${moveY * 0.8}px)`;
+      }
+      if (orangeChar) {
+        let baseTransform = '';
+        if (isShowingPassword) baseTransform = 'skewX(0deg) ';
+        orangeChar.style.transform = baseTransform + `translate(${moveX * 1.2}px, ${moveY * 1.2}px)`;
+      }
+      if (yellowChar) {
+        let baseTransform = '';
+        if (isShowingPassword) baseTransform = 'skewX(0deg) ';
+        yellowChar.style.transform = baseTransform + `translate(${moveX}px, ${moveY}px)`;
+      }
+    }
+
+    function loginBlinkCharacter(eyeIds, isBlinking) {
+      eyeIds.forEach(id => {
+        const eye = document.getElementById(id);
+        if (eye) {
+          if (isBlinking) {
+            eye.classList.add('blink');
+          } else {
+            eye.classList.remove('blink');
+          }
+        }
+      });
+    }
+
+    function scheduleLoginPurpleBlink() {
+      const delay = Math.random() * 4000 + 3000;
+      loginPurpleBlinkTimeout = setTimeout(() => {
+        loginIsPurpleBlinking = true;
+        loginBlinkCharacter(['loginPurpleEye1', 'loginPurpleEye2'], true);
+        setTimeout(() => {
+          loginIsPurpleBlinking = false;
+          loginBlinkCharacter(['loginPurpleEye1', 'loginPurpleEye2'], false);
+          if (!document.hidden) scheduleLoginPurpleBlink();
+        }, 150);
+      }, delay);
+    }
+    scheduleLoginPurpleBlink();
+
+    function scheduleLoginBlackBlink() {
+      const delay = Math.random() * 4000 + 3000;
+      loginBlackBlinkTimeout = setTimeout(() => {
+        loginIsBlackBlinking = true;
+        loginBlinkCharacter(['loginBlackEye1', 'loginBlackEye2'], true);
+        setTimeout(() => {
+          loginIsBlackBlinking = false;
+          loginBlinkCharacter(['loginBlackEye1', 'loginBlackEye2'], false);
+          if (!document.hidden) scheduleLoginBlackBlink();
+        }, 150);
+      }, delay);
+    }
+    scheduleLoginBlackBlink();
+
+    function scheduleLoginPurplePeek() {
+      if (loginPeekTimeout) clearTimeout(loginPeekTimeout);
+
+      if (!loginShowPassword || document.getElementById('loginPassword').value.length === 0) return;
+
+      loginPeekTimeout = setTimeout(() => {
+        const pupils = [document.getElementById('loginPurplePupil1'), document.getElementById('loginPurplePupil2')];
+        pupils.forEach(pupil => {
+          if (pupil) pupil.style.transform = 'translate(4px, 5px)';
+        });
+
+        setTimeout(() => {
+          const pupils = [document.getElementById('loginPurplePupil1'), document.getElementById('loginPurplePupil2')];
+          pupils.forEach(pupil => {
+            if (pupil) pupil.style.transform = '';
+          });
+          scheduleLoginPurplePeek();
+        }, 800);
+      }, Math.random() * 3000 + 2000);
+    }
+
+    function updateLoginCharacters() {
+      const passwordLength = document.getElementById('loginPassword').value.length;
+      const isHidingPassword = passwordLength > 0 && !loginShowPassword;
+      const isShowingPassword = passwordLength > 0 && loginShowPassword;
+
+      const purpleChar = document.getElementById('loginPurpleChar');
+      const purpleEyes = document.getElementById('loginPurpleEyes');
+      const blackChar = document.getElementById('loginBlackChar');
+      const blackEyes = document.getElementById('loginBlackEyes');
+      const orangeChar = document.getElementById('loginOrangeChar');
+      const orangeEyes = document.getElementById('loginOrangeEyes');
+      const yellowChar = document.getElementById('loginYellowChar');
+      const yellowEyes = document.getElementById('loginYellowEyes');
+
+      if (isShowingPassword) {
+        if (purpleChar) { purpleChar.style.height = '400px'; purpleChar.style.transform = 'skewX(0deg)'; }
+        if (purpleEyes) { purpleEyes.style.left = '20px'; purpleEyes.style.top = '35px'; }
+      } else if (loginIsTyping || isHidingPassword) {
+        if (purpleChar) { purpleChar.style.height = '440px'; purpleChar.style.transform = 'skewX(-12deg) translateX(40px)'; }
+        if (purpleEyes) { purpleEyes.style.left = loginIsLookingAtEachOther ? '55px' : '65px'; purpleEyes.style.top = loginIsLookingAtEachOther ? '65px' : '55px'; }
+        
+        if (loginIsLookingAtEachOther) {
+          const pupils = [document.getElementById('loginPurplePupil1'), document.getElementById('loginPurplePupil2')];
+          pupils.forEach(pupil => { if (pupil) pupil.style.transform = 'translate(3px, 4px)'; });
+        }
+      } else {
+        if (purpleChar) { purpleChar.style.height = '400px'; purpleChar.style.transform = ''; }
+        if (purpleEyes) { purpleEyes.style.left = '45px'; purpleEyes.style.top = '40px'; }
+      }
+
+      if (isShowingPassword) {
+        if (blackChar) blackChar.style.transform = 'skewX(0deg)';
+        if (blackEyes) { blackEyes.style.left = '10px'; blackEyes.style.top = '28px'; }
+      } else if (loginIsLookingAtEachOther) {
+        if (blackChar) blackChar.style.transform = 'skewX(10deg) translateX(20px)';
+        if (blackEyes) { blackEyes.style.left = '32px'; blackEyes.style.top = '12px'; }
+      } else if (loginIsTyping || isHidingPassword) {
+        if (blackChar) blackChar.style.transform = 'skewX(15deg)';
+        if (blackEyes) { blackEyes.style.left = '26px'; blackEyes.style.top = '32px'; }
+      } else {
+        if (blackChar) blackChar.style.transform = '';
+        if (blackEyes) { blackEyes.style.left = '26px'; blackEyes.style.top = '32px'; }
+      }
+
+      if (isShowingPassword) {
+        if (orangeChar) orangeChar.style.transform = 'skewX(0deg)';
+        if (orangeEyes) { orangeEyes.style.left = '50px'; orangeEyes.style.top = '85px'; }
+        const orangePupils = document.querySelectorAll('#loginOrangeEyes .login-pupil-dot');
+        orangePupils.forEach(pupil => { pupil.style.transform = 'translate(-5px, -4px)'; });
+      } else {
+        if (orangeChar) orangeChar.style.transform = '';
+        if (orangeEyes) { orangeEyes.style.left = '82px'; orangeEyes.style.top = '90px'; }
+        if (!loginIsLookingAtEachOther) updateLoginPupils();
+      }
+
+      if (isShowingPassword) {
+        if (yellowChar) yellowChar.style.transform = 'skewX(0deg)';
+        if (yellowEyes) { yellowEyes.style.left = '20px'; yellowEyes.style.top = '35px'; }
+        const loginYellowMouth = document.getElementById('loginYellowMouth');
+        if (loginYellowMouth) loginYellowMouth.style.left = '10px';
+        const yellowPupils = document.querySelectorAll('#loginYellowEyes .login-pupil-dot');
+        yellowPupils.forEach(pupil => { pupil.style.transform = 'translate(-5px, -4px)'; });
+      } else {
+        if (yellowChar) yellowChar.style.transform = '';
+        if (yellowEyes) { yellowEyes.style.left = '52px'; yellowEyes.style.top = '40px'; }
+        const loginYellowMouth = document.getElementById('loginYellowMouth');
+        if (loginYellowMouth) loginYellowMouth.style.left = '40px';
+        if (!loginIsLookingAtEachOther && !loginShowPassword) updateLoginPupils();
+      }
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      loginMouseX = e.clientX;
+      loginMouseY = e.clientY;
+      updateLoginPupils();
+    });
+
+    document.getElementById('loginRefreshCaptcha').addEventListener('click', generateLoginCaptcha);
+
+    document.getElementById('loginTogglePassword').addEventListener('click', () => {
+      loginShowPassword = !loginShowPassword;
+      document.getElementById('loginPassword').type = loginShowPassword ? 'text' : 'password';
+      
+      const loginEyeIcon = document.getElementById('loginEyeIcon');
+      if (loginShowPassword) {
+        loginEyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+      } else {
+        loginEyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      }
+      
+      updateLoginCharacters();
+      
+      if (loginShowPassword && document.getElementById('loginPassword').value.length > 0) {
+        scheduleLoginPurplePeek();
+      }
+    });
+
+    document.getElementById('loginUsername').addEventListener('focus', () => {
+      loginIsTyping = true;
+      loginIsLookingAtEachOther = true;
+      updateLoginCharacters();
+      setTimeout(() => {
+        loginIsLookingAtEachOther = false;
+        updateLoginCharacters();
+      }, 800);
+    });
+
+    document.getElementById('loginUsername').addEventListener('blur', () => {
+      loginIsTyping = false;
+      loginIsLookingAtEachOther = false;
+      updateLoginCharacters();
+    });
+
+    document.getElementById('loginPassword').addEventListener('input', () => {
+      updateLoginCharacters();
+      if (loginShowPassword && document.getElementById('loginPassword').value.length > 0) {
+        scheduleLoginPurplePeek();
+      }
+    });
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      if (checkCaptchaExpired()) return;
+
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+      const captcha = parseInt(document.getElementById('loginCaptcha').value);
+
+      if (captcha !== loginCaptchaNum1 + loginCaptchaNum2) {
+        document.getElementById('loginCaptchaError').textContent = 'Incorrect answer, please try again.';
+        document.getElementById('loginCaptchaError').classList.add('show');
+        generateLoginCaptcha();
+        return;
+      }
+
+      document.getElementById('loginCaptchaError').classList.remove('show');
+
+      try {
+        const isRegistered = await checkAuthStatus();
+        let data;
+        if (!isRegistered) {
+          data = await api('/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+          });
+        } else {
+          data = await api('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+          });
+        }
+        localStorage.setItem(TOKEN_KEY, data.token);
+        localStorage.setItem(USER_KEY, data.username);
+        clearInterval(loginCaptchaInterval);
+        checkLoginStatus();
+      } catch (e) {
+        document.getElementById('loginError').classList.add('show');
+        generateLoginCaptcha();
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      try {
+        await api('/api/auth/logout', { method: 'POST' });
+      } catch (e) {}
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      if (loginCaptchaInterval) clearInterval(loginCaptchaInterval);
+      if (loginPeekTimeout) clearTimeout(loginPeekTimeout);
+      if (loginPurpleBlinkTimeout) clearTimeout(loginPurpleBlinkTimeout);
+      if (loginBlackBlinkTimeout) clearTimeout(loginBlackBlinkTimeout);
+      generateLoginCaptcha();
+      checkLoginStatus();
+    });
+
+    generateLoginCaptcha();
+    checkLoginStatus();
+
+    function getStoredCredentials() {
+      return {
+        username: localStorage.getItem('bookmark_username') || 'admin',
+        password: localStorage.getItem('bookmark_password') || 'admin'
+      };
+    }
+
+    function saveCredentials(username, password) {
+      localStorage.setItem('bookmark_username', username);
+      localStorage.setItem('bookmark_password', password);
+    }
+
+    document.getElementById('changePwdLink').addEventListener('click', () => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const isLoggedIn = !!token;
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newUsername').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      document.getElementById('changePwdError').classList.remove('show');
+      document.getElementById('changePwdModal').classList.add('active');
+    });
+
+    document.getElementById('changePwdModalClose').addEventListener('click', () => {
+      document.getElementById('changePwdModal').classList.remove('active');
+    });
+
+    document.getElementById('changePwdCancel').addEventListener('click', () => {
+      document.getElementById('changePwdModal').classList.remove('active');
+    });
+
+    document.getElementById('changePwdSave').addEventListener('click', async () => {
+      const currentPwd = document.getElementById('currentPassword').value;
+      const newUsername = document.getElementById('newUsername').value.trim();
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const errorEl = document.getElementById('changePwdError');
+
+      if (currentPwd.length < 4) {
+        errorEl.textContent = '密码至少需要4位';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      if (newPassword && newPassword.length < 4) {
+        errorEl.textContent = '新密码至少需要4位';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      if (newPassword && newPassword !== confirmPassword) {
+        errorEl.textContent = '两次输入的新密码不一致';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      try {
+        await api('/api/auth/update-password', {
+          method: 'POST',
+          body: JSON.stringify({ currentPassword: currentPwd, newUsername, newPassword })
+        });
+        document.getElementById('changePwdModal').classList.remove('active');
+        alert('登录信息已更新，请重新登录');
+        document.getElementById('logoutBtn').click();
+      } catch (e) {
+        errorEl.textContent = e.message || '更新失败';
+        errorEl.classList.add('show');
+      }
+    });
+
+    document.getElementById('changePwdModal').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) {
+        e.target.classList.remove('active');
+      }
+    });
+
+    let categories = [];
+    let favorites = [];
+    let currentCategory = 'all';
+    let editingFavoriteId = null;
+    let editingCategoryId = null;
+    let selectedEmoji = EMOJIS[0];
+    let selectedFavEmoji = '🌍';
+    let selectedCustomImg = null;
+    let selectedCategories = [];
+    const COLORS = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b', '#ffffff'];
+    let selectedColor = COLORS[0];
+    let isSorting = false;
+    let draggedItem = null;
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function convertToRgba(color, alpha) {
+      if (!color) return `rgba(0,0,0,${alpha})`;
+      if (color.startsWith('rgba')) return color;
+      if (color.startsWith('rgb')) return color.replace('rgb', 'rgba').replace(')', `,${alpha})`);
+      if (color.startsWith('#')) {
+        const hex = color.slice(1);
+        if (hex.length === 6) {
+          const r = parseInt(hex.substring(0,2), 16);
+          const g = parseInt(hex.substring(2,4), 16);
+          const b = parseInt(hex.substring(4,6), 16);
+          return `rgba(${r},${g},${b},${alpha})`;
+        }
+        if (hex.length === 3) {
+          const r = parseInt(hex[0] + hex[0], 16);
+          const g = parseInt(hex[1] + hex[1], 16);
+          const b = parseInt(hex[2] + hex[2], 16);
+          return `rgba(${r},${g},${b},${alpha})`;
+        }
+      }
+      return `rgba(0,0,0,${alpha})`;
+    }
+
+    function getCategoryColors(fav) {
+      const ids = getCategoryIds(fav);
+      const defaultColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50'];
+      return ids.map((id, index) => {
+        const cat = categories.find(c => c.id === id);
+        const color = cat?.color || defaultColors[index % defaultColors.length];
+        return convertToRgba(color, 0.3);
+      });
+    }
+
+    function saveData() {
+      saveToServer();
+    }
+
+    function getDomain(url) {
+      try { return new URL(url).hostname; } catch { return ''; }
+    }
+
+    function getCategoryIds(fav) {
+      if (fav.categoryIds) return fav.categoryIds;
+      if (fav.categoryId) return [fav.categoryId];
+      return [];
+    }
+
+    function isInCategory(fav, categoryId) {
+      return getCategoryIds(fav).includes(categoryId);
+    }
+
+    function getCategoryIcons(fav) {
+      const ids = getCategoryIds(fav);
+      return ids.map(id => {
+        const cat = categories.find(c => c.id === id);
+        return cat ? cat.icon : '';
+      }).join(' ');
+    }
+
+    function getFavicon(url) {
+      const domain = getDomain(url);
+      if (!domain) return defaultIconSvg;
+      return `/api/favicon?url=${encodeURIComponent(domain)}`;
+    }
+
+    async function fetchImageAsBase64(url) {
+      if (!url || url.startsWith('data:')) {
+        return url;
+      }
+      if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) return null;
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function extractTitle(url, title) {
+      return title || getDomain(url) || '未命名';
+    }
+
+    function renderCategories() {
+      const categoryList = document.getElementById('categoryList');
+      document.getElementById('allCount').textContent = favorites.length;
+
+      categoryList.innerHTML = categories.map(cat => {
+        const count = favorites.filter(f => isInCategory(f, cat.id)).length;
+        const bgColor = convertToRgba(cat.color || '#ffffff', 0.3);
+        return `
+          <div class="category-item" data-category="${escapeHtml(cat.id)}" style="background: ${bgColor};">
+            <span class="category-icon">${cat.icon}</span>
+            <span class="category-name">${escapeHtml(cat.name)}</span>
+            <span class="category-count">${count}</span>
+            <div class="category-actions">
+              <button class="category-action" onclick="event.stopPropagation(); editCategory('${escapeHtml(cat.id)}')" title="编辑">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button class="category-action delete" onclick="event.stopPropagation(); deleteCategory('${escapeHtml(cat.id)}')" title="删除">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.category-item').forEach(item => {
+        item.addEventListener('click', () => selectCategory(item.dataset.category));
+      });
+    }
+
+    function renderFavorites() {
+      const grid = document.getElementById('favoritesGrid');
+      const emptyState = document.getElementById('emptyState');
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+      let filtered = favorites;
+      if (currentCategory !== 'all') {
+        filtered = filtered.filter(f => isInCategory(f, currentCategory));
+      }
+      if (searchTerm) {
+        filtered = filtered.filter(f =>
+          f.title.toLowerCase().includes(searchTerm) ||
+          f.url.toLowerCase().includes(searchTerm)
+        );
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      grid.innerHTML = filtered.map((fav, index) => `
+        <div class="favorite-card" data-id="${escapeHtml(fav.id)}" draggable="${isSorting}" style="${isSorting ? 'cursor: grab;' : ''}">
+          
+          <div class="drag-handle" ${!isSorting ? 'style="display:none"' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path>
+            </svg>
+          </div>
+          <div class="favorite-card-actions">
+            <button class="card-action" onclick="event.stopPropagation(); editFavorite('${escapeHtml(fav.id)}')" title="编辑">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="card-action delete" onclick="event.stopPropagation(); deleteFavorite('${escapeHtml(fav.id)}')" title="删除">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="favicon" data-favicon="${escapeHtml(fav.favicon || '')}" data-custom-icon="${escapeHtml(fav.customIcon || '')}" data-custom-img="${escapeHtml(fav.customImg || '')}">
+            ${fav.customImg ? `<img src="${escapeHtml(fav.customImg)}" alt="">` : (fav.customIcon ? fav.customIcon : (fav.favicon ? `<img src="${escapeHtml(fav.favicon)}" alt="" onerror="this.parentElement.innerHTML='${defaultIconSvg}'">` : `<span class="default-icon">${defaultIconSvg}</span>`))}
+          </div>
+          <div class="favorite-title">${escapeHtml(fav.title)}</div>
+          <div class="favorite-url">${escapeHtml(getDomain(fav.url) || fav.url)}</div>
+          <div class="favorite-categories">${getCategoryIcons(fav)}</div>
+          ${getCategoryColors(fav).length > 0 ? `<div class="favorite-color-bar" style="margin-top: 8px; display: flex; gap: 4px;">
+            ${getCategoryColors(fav).map(color => `<div style="width: 100%; height: 4px; border-radius: 2px; background: ${color};"></div>`).join('')}
+          </div>` : ''}
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.favorite-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (isBatchMode) {
+            if (selectedFavorites.has(card.dataset.id)) {
+              selectedFavorites.delete(card.dataset.id);
+              card.classList.remove('selected');
+            } else {
+              selectedFavorites.add(card.dataset.id);
+              card.classList.add('selected');
+            }
+            updateSelectedCount();
+          } else if (!isSorting) {
+            if (!e.target.closest('.favorite-card-actions')) {
+              const fav = favorites.find(f => f.id === card.dataset.id);
+              if (fav) window.open(fav.url, '_blank');
+            }
+          }
+        });
+
+        if (isSorting) {
+          card.addEventListener('dragstart', handleDragStart);
+          card.addEventListener('dragend', handleDragEnd);
+          card.addEventListener('dragover', handleDragOver);
+          card.addEventListener('drop', handleDrop);
+        }
+
+        const faviconDiv = card.querySelector('.favicon');
+        if (faviconDiv && !faviconDiv.querySelector('img[src=""]') && !faviconDiv.querySelector('.custom-icon')) {
+          const img = faviconDiv.querySelector('img');
+          if (img && img.src) {
+            img.onerror = function() {
+              faviconDiv.innerHTML = defaultIconSvg;
+            };
+          }
+        }
+      });
+    }
+
+    function handleDragStart(e) {
+      draggedItem = e.target;
+      e.target.classList.add('sorting');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('sorting');
+      document.querySelectorAll('.favorite-card').forEach(card => {
+        card.classList.remove('drag-over');
+      });
+      draggedItem = null;
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const card = e.target.closest('.favorite-card');
+      if (card && card !== draggedItem) {
+        card.classList.add('drag-over');
+      }
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const dropTarget = e.target.closest('.favorite-card');
+      if (dropTarget && dropTarget !== draggedItem) {
+        const dragId = draggedItem.dataset.id;
+        const dropId = dropTarget.dataset.id;
+        const dragIndex = favorites.findIndex(f => f.id === dragId);
+        const dropIndex = favorites.findIndex(f => f.id === dropId);
+
+        const [removed] = favorites.splice(dragIndex, 1);
+        favorites.splice(dropIndex, 0, removed);
+        saveData();
+        renderFavorites();
+      }
+    }
+
+    function selectCategory(categoryId) {
+      currentCategory = categoryId;
+      document.querySelectorAll('.category-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.category === categoryId);
+      });
+
+      const title = categoryId === 'all' ? '全部收藏' : categories.find(c => c.id === categoryId)?.name || '未分类';
+      document.getElementById('pageTitle').textContent = title;
+      renderFavorites();
+
+      if (window.innerWidth < 768) {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+      }
+    }
+
+    function toggleSortMode() {
+      isSorting = !isSorting;
+      const sortBtn = document.getElementById('sortBtn');
+      sortBtn.classList.toggle('active', isSorting);
+      sortBtn.innerHTML = isSorting
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg> 完成'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg> 排序';
+      renderFavorites();
+    }
+
+    function openFavoriteModal(edit = false) {
+      const title = document.getElementById('favoriteModalTitle');
+
+      title.textContent = edit ? '编辑书签' : '添加书签';
+
+      document.getElementById('faviconPickerGroup').style.display = 'none';
+
+      if (edit && editingFavoriteId) {
+        const fav = favorites.find(f => f.id === editingFavoriteId);
+        if (fav) {
+          document.getElementById('favoriteTitle').value = fav.title;
+          document.getElementById('favoriteUrl').value = fav.url;
+          selectedCategories = fav.categoryIds ? [...fav.categoryIds] : [];
+          selectedFavEmoji = (fav.customIcon !== undefined && fav.customIcon !== null) ? fav.customIcon : '';
+          selectedCustomImg = fav.customImg || null;
+        }
+      } else {
+        selectedCategories = [];
+      }
+
+      renderCategoryCheckboxes();
+
+      if (!edit || !editingFavoriteId) {
+        document.getElementById('favoriteTitle').value = '';
+        document.getElementById('favoriteUrl').value = '';
+        selectedFavEmoji = '🌍';
+        selectedCustomImg = null;
+      } else {
+        const fav = favorites.find(f => f.id === editingFavoriteId);
+        if (fav) {
+          if (fav.customImg) {
+            document.getElementById('previewFavicon').innerHTML = `<img src="${fav.customImg}" alt="">`;
+          } else if (fav.customIcon) {
+            document.getElementById('previewFavicon').innerHTML = fav.customIcon;
+          } else if (fav.favicon) {
+            const img = document.createElement('img');
+            img.src = fav.favicon;
+            img.alt = '';
+            img.onerror = function() {
+              this.style.display = 'none';
+              document.getElementById('previewFavicon').textContent = '🌍';
+            };
+            img.onload = function() {
+              document.getElementById('previewFavicon').innerHTML = '';
+              document.getElementById('previewFavicon').appendChild(img);
+            };
+            if (img.complete && img.naturalHeight !== 0) {
+              document.getElementById('previewFavicon').innerHTML = '';
+              document.getElementById('previewFavicon').appendChild(img);
+            } else {
+              document.getElementById('previewFavicon').textContent = '🌍';
+            }
+          } else {
+            document.getElementById('previewFavicon').innerHTML = defaultIconSvg;
+          }
+        }
+      }
+
+      renderFavEmojiPicker();
+      document.getElementById('favoriteModal').classList.add('active');
+    }
+
+    function closeFavoriteModal() {
+      document.getElementById('favoriteModal').classList.remove('active');
+      document.getElementById('faviconPickerGroup').style.display = 'none';
+      editingFavoriteId = null;
+      selectedFavEmoji = '🌍';
+      selectedCustomImg = null;
+      selectedCategories = [];
+    }
+
+    function renderCategoryCheckboxes() {
+      const container = document.getElementById('categoryCheckboxList');
+      if (categories.length === 0) {
+        container.innerHTML = '<span style="color: var(--text-secondary); font-size: 13px;">请先在左侧添加分类</span>';
+        return;
+      }
+      container.innerHTML = categories.map(cat => {
+        const isSelected = selectedCategories.includes(cat.id);
+        const isDisabled = !isSelected && selectedCategories.length >= 3;
+        return `<div class="category-checkbox-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}" data-id="${escapeHtml(cat.id)}" onclick="toggleCategory('${escapeHtml(cat.id)}')">
+          <span>${cat.icon} ${escapeHtml(cat.name)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function toggleCategory(id) {
+      if (selectedCategories.includes(id)) {
+        selectedCategories = selectedCategories.filter(c => c !== id);
+      } else if (selectedCategories.length < 3) {
+        selectedCategories.push(id);
+      }
+      renderCategoryCheckboxes();
+    }
+
+    function renderFavEmojiPicker() {
+      const picker = document.getElementById('favEmojiPicker');
+      picker.innerHTML = EMOJIS.map(emoji => `
+        <div class="emoji-option ${emoji === selectedFavEmoji ? 'selected' : ''}" data-emoji="${emoji}">${emoji}</div>
+      `).join('');
+
+      document.querySelectorAll('#favEmojiPicker .emoji-option').forEach(option => {
+        option.addEventListener('click', () => {
+          selectedFavEmoji = option.dataset.emoji;
+          selectedCustomImg = null;
+          if (selectedFavEmoji === '') {
+            useAutoFavicon();
+          } else {
+            document.getElementById('previewFavicon').textContent = selectedFavEmoji;
+          }
+          renderFavEmojiPicker();
+        });
+      });
+    }
+
+    function handleIconUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        selectedCustomImg = event.target.result;
+        selectedFavEmoji = '🌍';
+        document.getElementById('previewFavicon').innerHTML = `<img src="${selectedCustomImg}" alt="">`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function showEmojiPicker() {
+      document.getElementById('faviconPickerGroup').style.display = 'block';
+      renderFavEmojiPicker();
+    }
+
+    function useAutoFavicon() {
+      const url = document.getElementById('favoriteUrl').value.trim();
+      if (!url) { alert('请先输入网址'); return; }
+
+      let finalUrl = url;
+      if (!/^https?:\/\//i.test(url)) finalUrl = 'https://' + url;
+
+      selectedCustomImg = null;
+      selectedFavEmoji = '';
+      const faviconUrl = getFavicon(finalUrl);
+      const img = document.createElement('img');
+      img.src = faviconUrl;
+      img.alt = '';
+      img.onerror = function() {
+        this.style.display = 'none';
+        document.getElementById('previewFavicon').textContent = '🌍';
+      };
+      img.onload = function() {
+        document.getElementById('previewFavicon').innerHTML = '';
+        document.getElementById('previewFavicon').appendChild(img);
+      };
+      if (img.complete && img.naturalHeight !== 0) {
+        document.getElementById('previewFavicon').innerHTML = '';
+        document.getElementById('previewFavicon').appendChild(img);
+      } else {
+        document.getElementById('previewFavicon').textContent = '🌍';
+      }
+    }
+
+    function toggleFaviconPicker() {
+      const group = document.getElementById('faviconPickerGroup');
+      group.style.display = group.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function saveFavorite() {
+      const title = document.getElementById('favoriteTitle').value.trim();
+      const url = document.getElementById('favoriteUrl').value.trim();
+
+      if (!url) { alert('请输入网址'); return; }
+
+      let finalUrl = url;
+      if (!/^https?:\/\//i.test(url)) finalUrl = 'https://' + url;
+
+      if (editingFavoriteId) {
+        const index = favorites.findIndex(f => f.id === editingFavoriteId);
+        if (index !== -1) {
+          favorites[index] = {
+            ...favorites[index],
+            title: extractTitle(finalUrl, title),
+            url: finalUrl,
+            categoryIds: [...selectedCategories],
+            favicon: getFavicon(finalUrl),
+            customIcon: selectedCustomImg ? null : (selectedFavEmoji || null),
+            customImg: selectedCustomImg
+          };
+        }
+      } else {
+        favorites.push({
+          id: generateId(),
+          title: extractTitle(finalUrl, title),
+          url: finalUrl,
+          categoryIds: [...selectedCategories],
+          favicon: getFavicon(finalUrl),
+          customIcon: selectedCustomImg ? null : (selectedFavEmoji || null),
+          customImg: selectedCustomImg,
+          createdAt: Date.now()
+        });
+      }
+
+      saveData();
+      closeFavoriteModal();
+      renderCategories();
+      renderFavorites();
+    }
+
+    function editFavorite(id) { editingFavoriteId = id; openFavoriteModal(true); }
+
+    function deleteFavorite(id) {
+      showConfirm('确定要删除这个网址吗？', () => {
+        favorites = favorites.filter(f => f.id !== id);
+        saveData();
+        renderCategories();
+        renderFavorites();
+      });
+    }
+
+    function openCategoryModal(edit = false) {
+      const title = document.getElementById('categoryModalTitle');
+      title.textContent = edit ? '编辑分类' : '添加分类';
+
+      if (edit && editingCategoryId) {
+        const cat = categories.find(c => c.id === editingCategoryId);
+        if (cat) {
+          document.getElementById('categoryName').value = cat.name;
+          selectedEmoji = cat.icon;
+          selectedColor = cat.color || COLORS[0];
+        }
+      } else {
+        document.getElementById('categoryName').value = '';
+        selectedEmoji = EMOJIS[0];
+        selectedColor = COLORS[0];
+      }
+
+      renderEmojiPicker();
+      renderColorPicker();
+      document.getElementById('categoryModal').classList.add('active');
+    }
+
+    function closeCategoryModal() {
+      document.getElementById('categoryModal').classList.remove('active');
+      editingCategoryId = null;
+    }
+
+    function renderEmojiPicker() {
+      const picker = document.getElementById('emojiPicker');
+      picker.innerHTML = EMOJIS.map(emoji => `
+        <div class="emoji-option ${emoji === selectedEmoji ? 'selected' : ''}" data-emoji="${emoji}">${emoji}</div>
+      `).join('');
+
+      document.querySelectorAll('.emoji-option').forEach(option => {
+        option.addEventListener('click', () => { selectedEmoji = option.dataset.emoji; renderEmojiPicker(); });
+      });
+    }
+
+    function renderColorPicker() {
+      const picker = document.getElementById('colorPicker');
+      picker.innerHTML = COLORS.map(color => `
+        <div class="color-option ${color === selectedColor ? 'selected' : ''}" data-color="${color}" style="background: ${color};"></div>
+      `).join('');
+
+      document.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', () => { selectedColor = option.dataset.color; renderColorPicker(); });
+      });
+    }
+
+    function saveCategory() {
+      const name = document.getElementById('categoryName').value.trim();
+      if (!name) { alert('请输入分类名称'); return; }
+
+      if (editingCategoryId) {
+        const index = categories.findIndex(c => c.id === editingCategoryId);
+        if (index !== -1) categories[index] = { ...categories[index], name, icon: selectedEmoji, color: selectedColor };
+      } else {
+        categories.push({ id: generateId(), name, icon: selectedEmoji, color: selectedColor });
+      }
+
+      saveData();
+      closeCategoryModal();
+      renderCategories();
+    }
+
+    function editCategory(id) { editingCategoryId = id; openCategoryModal(true); }
+
+    function deleteCategory(id) {
+      const count = favorites.filter(f => getCategoryIds(f).includes(id)).length;
+      const message = count > 0 ? `该分类下有 ${count} 个网址，确定删除吗？` : '确定要删除这个分类吗？';
+      showConfirm(message, () => {
+        categories = categories.filter(c => c.id !== id);
+        favorites = favorites.map(f => {
+          const ids = getCategoryIds(f).filter(cid => cid !== id);
+          return { ...f, categoryIds: ids };
+        });
+        saveData();
+        if (currentCategory === id) selectCategory('all');
+        renderCategories();
+        renderFavorites();
+      });
+    }
+
+    async function exportData() {
+      showLoading(true);
+      try {
+        const favWithBase64 = await Promise.all(favorites.map(async (fav) => {
+          let base64Img = null;
+          if (fav.favicon && fav.favicon.includes('google.com/s2/favicons')) {
+            try {
+              base64Img = await fetchImageAsBase64(fav.favicon);
+            } catch (e) {
+              console.log('Failed to fetch favicon for', fav.url, e.message);
+            }
+          }
+          return { ...fav, faviconBase64: base64Img };
+        }));
+
+        const data = { categories, favorites: favWithBase64, exportedAt: new Date().toISOString() };
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bookmarks_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function showLoading(show) {
+      let loading = document.getElementById('loadingOverlay');
+      if (!loading) {
+        loading = document.createElement('div');
+        loading.id = 'loadingOverlay';
+        loading.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+        loading.innerHTML = '<div style="background:#fff;padding:20px 40px;border-radius:8px;font-size:16px;">处理中...</div>';
+        document.body.appendChild(loading);
+      }
+      loading.style.display = show ? 'flex' : 'none';
+    }
+
+    function importData(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          let data;
+
+          if (file.name.endsWith('.html')) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const links = doc.querySelectorAll('a[href]');
+            data = { categories: [], favorites: [] };
+            links.forEach(link => {
+              const href = link.getAttribute('href');
+              try {
+                if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
+                  const hostname = new URL(href).hostname || href;
+                  data.favorites.push({
+                    id: generateId(),
+                    title: link.textContent || hostname,
+                    url: href,
+                    favicon: getFavicon(href),
+                    createdAt: Date.now()
+                  });
+                }
+              } catch (err) {}
+            });
+          } else {
+            data = JSON.parse(text);
+          }
+
+          if (data.categories) categories = data.categories;
+          if (data.favorites) {
+            const existingUrls = new Map(favorites.map(f => [f.url, f]));
+            const newFavorites = [];
+            data.favorites.forEach(fav => {
+              if (existingUrls.has(fav.url)) {
+                const existing = existingUrls.get(fav.url);
+                existingUrls.set(fav.url, {
+                  ...existing,
+                  title: fav.title || existing.title,
+                  categoryIds: fav.categoryIds || existing.categoryIds,
+                  favicon: (fav.faviconBase64 || fav.favicon) || existing.favicon,
+                  faviconBase64: fav.faviconBase64 || existing.faviconBase64
+                });
+              } else {
+                newFavorites.push({
+                  ...fav,
+                  id: generateId(),
+                  favicon: fav.faviconBase64 || fav.favicon || getFavicon(fav.url),
+                  createdAt: Date.now()
+                });
+              }
+            });
+            favorites = [...existingUrls.values(), ...newFavorites];
+          }
+
+          saveData();
+          renderCategories();
+          renderFavorites();
+          alert(`导入成功：${data.favorites?.length || 0} 个网址`);
+        } catch (err) {
+          alert('导入失败，文件格式不正确');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    let confirmCallback = null;
+
+    function showConfirm(text, callback) {
+      confirmCallback = callback;
+      document.getElementById('confirmText').textContent = text;
+      document.getElementById('confirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').classList.remove('active');
+      confirmCallback = null;
+    }
+
+    document.getElementById('addFavoriteBtn').addEventListener('click', () => openFavoriteModal(false));
+
+    let isBatchMode = false;
+    const selectedFavorites = new Set();
+
+    function toggleBatchMode() {
+      isBatchMode = !isBatchMode;
+      document.body.classList.toggle('batch-mode', isBatchMode);
+      document.getElementById('batchManageBtn').style.display = isBatchMode ? 'none' : 'inline-block';
+      document.getElementById('batchDeleteBtn').style.display = isBatchMode ? 'inline-block' : 'none';
+      document.getElementById('batchEditIconBtn').style.display = isBatchMode ? 'inline-block' : 'none';
+      document.getElementById('batchSetCategoryBtn').style.display = isBatchMode ? 'inline-block' : 'none';
+      document.getElementById('batchCancelBtn').style.display = isBatchMode ? 'inline-block' : 'none';
+      document.getElementById('batchToolbar').style.display = isBatchMode ? 'flex' : 'none';
+      selectedFavorites.clear();
+      document.querySelectorAll('.favorite-card').forEach(card => card.classList.remove('selected'));
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      document.getElementById('batchDeleteBtn').textContent = `删除选中 (${selectedFavorites.size})`;
+      document.getElementById('selectedCount').textContent = `已选择 ${selectedFavorites.size} 项`;
+    }
+
+    function batchDelete() {
+      if (selectedFavorites.size === 0) return;
+      confirmCallback = () => {
+        favorites = favorites.filter(f => !selectedFavorites.has(f.id));
+        saveData();
+        toggleBatchMode();
+        renderFavorites();
+        renderCategories();
+      };
+      document.getElementById('confirmText').textContent = `确定要删除选中的 ${selectedFavorites.size} 个收藏吗？`;
+      document.getElementById('confirmModal').classList.add('active');
+    }
+
+    let batchSelectedEmoji = '';
+
+    function batchEditIcon() {
+      if (selectedFavorites.size === 0) return;
+      batchSelectedEmoji = '';
+      renderBatchEmojiPicker();
+      document.getElementById('batchIconModal').classList.add('active');
+    }
+
+    function renderBatchEmojiPicker() {
+      const picker = document.getElementById('batchEmojiPicker');
+      picker.innerHTML = EMOJIS.map(emoji => `
+        <div class="emoji-option ${emoji === batchSelectedEmoji ? 'selected' : ''}" data-emoji="${emoji}">${emoji}</div>
+      `).join('');
+
+      document.querySelectorAll('#batchEmojiPicker .emoji-option').forEach(option => {
+        option.addEventListener('click', () => {
+          batchSelectedEmoji = option.dataset.emoji;
+          renderBatchEmojiPicker();
+        });
+      });
+    }
+
+    function saveBatchIcon() {
+      if (!batchSelectedEmoji) { alert('请选择一个图标'); return; }
+      favorites = favorites.map(f => {
+        if (selectedFavorites.has(f.id)) {
+          return { ...f, customIcon: batchSelectedEmoji, customImg: '' };
+        }
+        return f;
+      });
+      saveData();
+      document.getElementById('batchIconModal').classList.remove('active');
+      toggleBatchMode();
+      renderFavorites();
+    }
+
+    let batchSelectedCategories = [];
+
+    function openBatchCategoryModal() {
+      if (selectedFavorites.size === 0) return;
+      batchSelectedCategories = [];
+      renderBatchCategoryList();
+      document.getElementById('batchCategoryModal').classList.add('active');
+    }
+
+    function renderBatchCategoryList() {
+      const container = document.getElementById('batchCategoryList');
+      container.innerHTML = categories.map(cat => `
+        <label style="display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">
+          <input type="checkbox" class="batch-category-checkbox" value="${escapeHtml(cat.id)}" ${batchSelectedCategories.includes(cat.id) ? 'checked' : ''}>
+          <span>${cat.icon} ${escapeHtml(cat.name)}</span>
+        </label>
+      `).join('');
+
+      document.querySelectorAll('.batch-category-checkbox').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            if (batchSelectedCategories.length < 3) {
+              batchSelectedCategories.push(e.target.value);
+            } else {
+              e.target.checked = false;
+              alert('最多选择3个分类');
+            }
+          } else {
+            batchSelectedCategories = batchSelectedCategories.filter(id => id !== e.target.value);
+          }
+        });
+      });
+    }
+
+    function saveBatchCategory() {
+      if (batchSelectedCategories.length === 0) {
+        alert('请至少选择一个分类');
+        return;
+      }
+      favorites = favorites.map(f => {
+        if (selectedFavorites.has(f.id)) {
+          return { ...f, categoryIds: [...batchSelectedCategories] };
+        }
+        return f;
+      });
+      saveData();
+      document.getElementById('batchCategoryModal').classList.remove('active');
+      toggleBatchMode();
+      renderFavorites();
+    }
+
+    document.getElementById('batchManageBtn').addEventListener('click', toggleBatchMode);
+    document.getElementById('batchCancelBtn').addEventListener('click', toggleBatchMode);
+    document.getElementById('batchDeleteBtn').addEventListener('click', batchDelete);
+    document.getElementById('batchEditIconBtn').addEventListener('click', batchEditIcon);
+    document.getElementById('batchSetCategoryBtn').addEventListener('click', openBatchCategoryModal);
+    document.getElementById('batchCategoryModalClose').addEventListener('click', () => document.getElementById('batchCategoryModal').classList.remove('active'));
+    document.getElementById('batchCategoryModalCancel').addEventListener('click', () => document.getElementById('batchCategoryModal').classList.remove('active'));
+    document.getElementById('batchCategoryModalSave').addEventListener('click', saveBatchCategory);
+
+    let isAllSelected = false;
+    document.getElementById('selectAllBtn').addEventListener('click', () => {
+      isAllSelected = !isAllSelected;
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      let filtered = favorites;
+      if (currentCategory !== 'all') {
+        filtered = filtered.filter(f => isInCategory(f, currentCategory));
+      }
+      if (searchTerm) {
+        filtered = filtered.filter(f =>
+          f.title.toLowerCase().includes(searchTerm) ||
+          f.url.toLowerCase().includes(searchTerm)
+        );
+      }
+      if (isAllSelected) {
+        filtered.forEach(f => selectedFavorites.add(f.id));
+        document.querySelectorAll('.favorite-card').forEach(card => {
+          if (filtered.some(f => f.id === card.dataset.id)) {
+            card.classList.add('selected');
+          }
+        });
+        document.getElementById('selectAllBtn').textContent = '取消全选';
+      } else {
+        selectedFavorites.clear();
+        document.querySelectorAll('.favorite-card').forEach(card => card.classList.remove('selected'));
+        document.getElementById('selectAllBtn').textContent = '全选';
+      }
+      updateSelectedCount();
+    });
+
+    document.getElementById('favoriteModalClose').addEventListener('click', closeFavoriteModal);
+    document.getElementById('favoriteModalCancel').addEventListener('click', closeFavoriteModal);
+    document.getElementById('favoriteModalSave').addEventListener('click', saveFavorite);
+    document.getElementById('previewFavicon').addEventListener('click', () => document.getElementById('uploadIconInput').click());
+    document.getElementById('uploadIconBtn').addEventListener('click', () => document.getElementById('uploadIconInput').click());
+    document.getElementById('selectEmojiBtn').addEventListener('click', showEmojiPicker);
+    document.getElementById('autoFaviconBtn').addEventListener('click', useAutoFavicon);
+    document.getElementById('uploadIconInput').addEventListener('change', handleIconUpload);
+
+    document.getElementById('addCategoryBtn').addEventListener('click', () => openCategoryModal(false));
+    document.getElementById('categoryModalClose').addEventListener('click', closeCategoryModal);
+    document.getElementById('categoryModalCancel').addEventListener('click', closeCategoryModal);
+    document.getElementById('categoryModalSave').addEventListener('click', saveCategory);
+
+    document.getElementById('confirmModalClose').addEventListener('click', closeConfirmModal);
+    document.getElementById('confirmModalCancel').addEventListener('click', closeConfirmModal);
+    document.getElementById('confirmModalConfirm').addEventListener('click', () => { if (confirmCallback) confirmCallback(); closeConfirmModal(); });
+
+    document.getElementById('batchIconModalClose').addEventListener('click', () => document.getElementById('batchIconModal').classList.remove('active'));
+    document.getElementById('batchIconModalCancel').addEventListener('click', () => document.getElementById('batchIconModal').classList.remove('active'));
+    document.getElementById('batchIconModalSave').addEventListener('click', saveBatchIcon);
+
+    document.getElementById('searchInput').addEventListener('input', renderFavorites);
+    document.getElementById('sortBtn').addEventListener('click', toggleSortMode);
+
+    document.getElementById('hamburger').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('active');
+    });
+    document.getElementById('sidebarOverlay').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('active');
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', exportData);
+    document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+    document.getElementById('importFile').addEventListener('change', (e) => { if (e.target.files[0]) importData(e.target.files[0]); });
+
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeFavoriteModal(); closeCategoryModal(); closeConfirmModal(); } });
+
+    ['favoriteModal', 'categoryModal', 'confirmModal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', (e) => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('active'); });
+    });
+
+    renderCategories();
+    renderFavorites();
+  </script>
+</body>
+</html>

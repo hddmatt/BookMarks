@@ -19,7 +19,7 @@
 ```bash
 git clone https://github.com/hddmatt/BookMarks.git /opt/BookMarks
 cd /opt/BookMarks
-docker-compose up -d
+docker compose up -d
 ```
 
 访问 http://你的服务器IP:8010
@@ -29,7 +29,7 @@ docker-compose up -d
 ```bash
 cd /opt/BookMarks
 git pull
-docker-compose up -d --force-recreate
+docker compose up -d --force-recreate
 ```
 
 ## 环境变量

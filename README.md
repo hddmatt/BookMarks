@@ -14,7 +14,9 @@
 - ✅ 响应式设计（支持移动端）
 - ✅ 数据自动备份
 
-## 部署方式（Docker）
+## 部署方式
+
+### 首次部署
 
 ```bash
 git clone https://github.com/hddmatt/BookMarks.git /opt/BookMarks
@@ -24,20 +26,13 @@ docker compose up -d
 
 访问 http://你的服务器IP:8010
 
-## 更新部署
+### 更新部署
 
 ```bash
 cd /opt/BookMarks
 git pull
 docker compose up -d --force-recreate
 ```
-
-## 环境变量
-
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| PORT | 8010 | 服务端口 |
-| HOST | 0.0.0.0 | 服务地址 |
 
 ## 初始账号
 
@@ -51,20 +46,21 @@ docker compose up -d --force-recreate
 - 前端：原生 HTML/CSS/JavaScript
 - 后端：Express.js
 - 数据存储：JSON 文件
+- 容器化：Docker (Alpine)
 
 ## 目录结构
 
 ```
-bookmarks-app/
+BookMarks/
 ├── public/
 │   └── index.html          # 前端页面
 ├── backend/
 │   ├── server.js           # 后端服务
 │   ├── index.html          # 备用前端页面
 │   ├── bookmarks.json      # 数据文件
+│   ├── backups/            # 数据备份
 │   ├── package.json        # 依赖配置
 │   └── Dockerfile          # Docker 配置
-├── docker-compose.yml      # Docker Compose 配置
-├── start.sh                # 启动脚本
+├── docker-compose.yml       # Docker Compose 配置
 └── .gitignore              # Git 忽略配置
 ```

@@ -14,27 +14,7 @@
 - ✅ 响应式设计（支持移动端）
 - ✅ 数据自动备份
 
-## 部署方式
-
-### 方式一：直接运行（Linux）
-
-```bash
-# 安装 Node.js
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt-get install -y nodejs
-
-# 克隆项目
-git clone https://github.com/hddmatt/BookMarks.git /opt/BookMarks
-
-# 安装依赖并运行
-cd /opt/BookMarks/backend
-npm install
-node server.js
-```
-
-访问 http://你的服务器IP:8010
-
-### 方式二：Docker 运行
+## 部署方式（Docker）
 
 ```bash
 git clone https://github.com/hddmatt/BookMarks.git /opt/BookMarks
@@ -43,6 +23,14 @@ docker-compose up -d
 ```
 
 访问 http://你的服务器IP:8010
+
+## 更新部署
+
+```bash
+cd /opt/BookMarks
+git pull
+docker-compose up -d --force-recreate
+```
 
 ## 环境变量
 

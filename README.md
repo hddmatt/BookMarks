@@ -32,6 +32,18 @@ node server.js
 docker-compose up -d
 ```
 
+### 方式三：SSH 一键拉取安装
+
+```bash
+ssh root@your-server -p 22 "cd /opt && git clone https://github.com/hddmatt/BookMarks.git && cd BookMarks/backend && npm install && bash start.sh"
+```
+
+或已克隆后更新：
+
+```bash
+ssh root@your-server -p 22 "cd /opt/BookMarks && git pull && cd backend && npm install && bash start.sh"
+```
+
 ## 环境变量
 
 | 变量 | 默认值 | 说明 |

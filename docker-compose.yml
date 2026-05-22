@@ -1,10 +1,11 @@
-version: '3.8'
-
 services:
   bookmarks:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8010:8010"
     volumes:
-      - ./data:/app/data
+      - ./backend/bookmarks.json:/app/bookmarks.json
+      - ./backend/backups:/app/backups
     restart: unless-stopped

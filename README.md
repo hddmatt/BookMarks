@@ -16,33 +16,26 @@
 
 ## 部署方式
 
-### 方式一：直接运行
+### 方式一：直接运行（Linux）
 
 ```bash
-cd backend
+git clone https://github.com/hddmatt/BookMarks.git /opt/BookMarks
+cd /opt/BookMarks/backend
 npm install
-node server.js
+bash start.sh
 ```
 
-访问 http://localhost:8010
+访问 http://你的服务器IP:8010
 
-### 方式二：Docker Compose
+### 方式二：Docker 运行
 
 ```bash
+git clone https://github.com/hddmatt/BookMarks.git /opt/BookMarks
+cd /opt/BookMarks
 docker-compose up -d
 ```
 
-### 方式三：SSH 一键拉取安装
-
-```bash
-ssh root@your-server -p 22 "cd /opt && git clone https://github.com/hddmatt/BookMarks.git && cd BookMarks/backend && npm install && bash start.sh"
-```
-
-或已克隆后更新：
-
-```bash
-ssh root@your-server -p 22 "cd /opt/BookMarks && git pull && cd backend && npm install && bash start.sh"
-```
+访问 http://你的服务器IP:8010
 
 ## 环境变量
 

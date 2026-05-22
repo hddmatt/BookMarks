@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM registry.cn-hangzhou.aliyuncs.com/library/node:18-slim
 
 WORKDIR /app
 

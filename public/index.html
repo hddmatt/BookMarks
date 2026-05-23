@@ -271,7 +271,7 @@
 
     .favorites-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 16px;
     }
 
@@ -283,6 +283,11 @@
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      min-height: 117px;
     }
 
     .favorite-card:hover {
@@ -350,13 +355,20 @@
       width: 48px;
       height: 48px;
       border-radius: 6px;
-      margin-bottom: 12px;
-      background: var(--bg);
+      background: var(--card-bg);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 32px;
       line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .favorite-info {
+      flex: 1;
+      min-width: 0;
+      margin-left: 12px;
+      margin-top: 5px;
     }
 
     .favicon img {
@@ -400,8 +412,9 @@
     }
 
     .favorite-categories {
-      font-size: 12px;
-      margin-top: 4px;
+      font-size: 15px;
+      margin-top: 25px;
+      margin-left: -55px;
       color: var(--primary);
     }
 
@@ -1236,6 +1249,7 @@
           <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">删除选中 (0)</button>
           <button class="btn btn-secondary" id="batchEditIconBtn" style="display: none;">修改图标</button>
           <button class="btn btn-secondary" id="batchSetCategoryBtn" style="display: none;">设置分类</button>
+          <button class="btn btn-secondary" id="batchSetColorBtn" style="display: none;">设置颜色</button>
           <button class="btn btn-secondary" id="batchCancelBtn" style="display: none;">取消</button>
         </div>
       </div>
@@ -1300,6 +1314,10 @@
           <label class="form-label">分类（最多选3个）</label>
           <div class="category-checkbox-list" id="categoryCheckboxList"></div>
         </div>
+        <div class="form-group">
+          <label class="form-label">书签颜色</label>
+          <div class="color-picker" id="favoriteColorPicker"></div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="favoriteModalCancel">取消</button>
@@ -1326,10 +1344,6 @@
         <div class="form-group">
           <label class="form-label">图标</label>
           <div class="emoji-picker" id="emojiPicker"></div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">颜色</label>
-          <div class="color-picker" id="colorPicker"></div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1381,6 +1395,29 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" id="batchCategoryModalCancel">取消</button>
         <button class="btn btn-primary" id="batchCategoryModalSave">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="batchColorModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">批量设置颜色</h2>
+        <button class="modal-close" id="batchColorModalClose">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">选择颜色</label>
+          <div class="color-picker" id="batchColorPicker"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="batchColorModalCancel">取消</button>
+        <button class="btn btn-primary" id="batchColorModalSave">确认</button>
       </div>
     </div>
   </div>
@@ -1949,6 +1986,7 @@ const defaultIconSvg = '🌍'
     let selectedCategories = [];
     const COLORS = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b', '#ffffff'];
     let selectedColor = COLORS[0];
+    let selectedFavoriteColor = COLORS[0];
     let isSorting = false;
     let draggedItem = null;
 
@@ -1984,14 +2022,8 @@ const defaultIconSvg = '🌍'
       return `rgba(0,0,0,${alpha})`;
     }
 
-    function getCategoryColors(fav) {
-      const ids = getCategoryIds(fav);
-      const defaultColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50'];
-      return ids.map((id, index) => {
-        const cat = categories.find(c => c.id === id);
-        const color = cat?.color || defaultColors[index % defaultColors.length];
-        return convertToRgba(color, 0.3);
-      });
+    function getFavoriteColor(fav) {
+      return fav.color || COLORS[0];
     }
 
     function saveData() {
@@ -2058,9 +2090,8 @@ const defaultIconSvg = '🌍'
 
       categoryList.innerHTML = categories.map(cat => {
         const count = favorites.filter(f => isInCategory(f, cat.id)).length;
-        const bgColor = convertToRgba(cat.color || '#ffffff', 0.3);
         return `
-          <div class="category-item" data-category="${escapeHtml(cat.id)}" style="background: ${bgColor};">
+          <div class="category-item" data-category="${escapeHtml(cat.id)}">
             <span class="category-icon">${cat.icon}</span>
             <span class="category-name">${escapeHtml(cat.name)}</span>
             <span class="category-count">${count}</span>
@@ -2111,7 +2142,7 @@ const defaultIconSvg = '🌍'
       emptyState.style.display = 'none';
       grid.innerHTML = filtered.map((fav, index) => `
         <div class="favorite-card" data-id="${escapeHtml(fav.id)}" draggable="${isSorting}" style="${isSorting ? 'cursor: grab;' : ''}">
-          
+
           <div class="drag-handle" ${!isSorting ? 'style="display:none"' : ''}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path>
@@ -2133,12 +2164,14 @@ const defaultIconSvg = '🌍'
           <div class="favicon" data-favicon="${escapeHtml(fav.favicon || '')}" data-custom-icon="${escapeHtml(fav.customIcon || '')}" data-custom-img="${escapeHtml(fav.customImg || '')}">
             ${fav.customImg ? `<img src="${escapeHtml(fav.customImg)}" alt="">` : (fav.customIcon ? fav.customIcon : (fav.favicon ? `<img src="${escapeHtml(fav.favicon)}" alt="" onerror="this.parentElement.innerHTML='${defaultIconSvg}'">` : `<span class="default-icon">${defaultIconSvg}</span>`))}
           </div>
-          <div class="favorite-title">${escapeHtml(fav.title)}</div>
-          <div class="favorite-url">${escapeHtml(getDomain(fav.url) || fav.url)}</div>
-          <div class="favorite-categories">${getCategoryIcons(fav)}</div>
-          ${getCategoryColors(fav).length > 0 ? `<div class="favorite-color-bar" style="margin-top: 8px; display: flex; gap: 4px;">
-            ${getCategoryColors(fav).map(color => `<div style="width: 100%; height: 4px; border-radius: 2px; background: ${color};"></div>`).join('')}
-          </div>` : ''}
+          <div class="favorite-info">
+            <div class="favorite-title">${escapeHtml(fav.title)}</div>
+            <div class="favorite-url">${escapeHtml(getDomain(fav.url) || fav.url)}</div>
+            <div class="favorite-categories">${getCategoryIcons(fav)}</div>
+          </div>
+          <div class="favorite-color-bar" style="width: 100%; margin-top: 12px; height: 1.5px;">
+            <div style="width: 100%; height: 1.5px; border-radius: 1px; background: ${getFavoriteColor(fav)}; opacity: 1;"></div>
+          </div>
         </div>
       `).join('');
 
@@ -2266,12 +2299,15 @@ const defaultIconSvg = '🌍'
           selectedCategories = fav.categoryIds ? [...fav.categoryIds] : [];
           selectedFavEmoji = (fav.customIcon !== undefined && fav.customIcon !== null) ? fav.customIcon : '';
           selectedCustomImg = fav.customImg || null;
+          selectedFavoriteColor = fav.color || COLORS[0];
         }
       } else {
         selectedCategories = [];
+        selectedFavoriteColor = COLORS[0];
       }
 
       renderCategoryCheckboxes();
+      renderFavoriteColorPicker();
 
       if (!edit || !editingFavoriteId) {
         document.getElementById('favoriteTitle').value = '';
@@ -2320,6 +2356,7 @@ const defaultIconSvg = '🌍'
       selectedFavEmoji = '🌍';
       selectedCustomImg = null;
       selectedCategories = [];
+      selectedFavoriteColor = COLORS[0];
     }
 
     function renderCategoryCheckboxes() {
@@ -2437,7 +2474,8 @@ const defaultIconSvg = '🌍'
             categoryIds: [...selectedCategories],
             favicon: getFavicon(finalUrl),
             customIcon: selectedCustomImg ? null : (selectedFavEmoji || null),
-            customImg: selectedCustomImg
+            customImg: selectedCustomImg,
+            color: selectedFavoriteColor
           };
         }
       } else {
@@ -2449,6 +2487,7 @@ const defaultIconSvg = '🌍'
           favicon: getFavicon(finalUrl),
           customIcon: selectedCustomImg ? null : (selectedFavEmoji || null),
           customImg: selectedCustomImg,
+          color: selectedFavoriteColor,
           createdAt: Date.now()
         });
       }
@@ -2479,16 +2518,13 @@ const defaultIconSvg = '🌍'
         if (cat) {
           document.getElementById('categoryName').value = cat.name;
           selectedEmoji = cat.icon;
-          selectedColor = cat.color || COLORS[0];
         }
       } else {
         document.getElementById('categoryName').value = '';
         selectedEmoji = EMOJIS[0];
-        selectedColor = COLORS[0];
       }
 
       renderEmojiPicker();
-      renderColorPicker();
       document.getElementById('categoryModal').classList.add('active');
     }
 
@@ -2519,15 +2555,26 @@ const defaultIconSvg = '🌍'
       });
     }
 
+    function renderFavoriteColorPicker() {
+      const picker = document.getElementById('favoriteColorPicker');
+      picker.innerHTML = COLORS.map(color => `
+        <div class="color-option ${color === selectedFavoriteColor ? 'selected' : ''}" data-color="${color}" style="background: ${color};"></div>
+      `).join('');
+
+      document.querySelectorAll('#favoriteColorPicker .color-option').forEach(option => {
+        option.addEventListener('click', () => { selectedFavoriteColor = option.dataset.color; renderFavoriteColorPicker(); });
+      });
+    }
+
     function saveCategory() {
       const name = document.getElementById('categoryName').value.trim();
       if (!name) { alert('请输入分类名称'); return; }
 
       if (editingCategoryId) {
         const index = categories.findIndex(c => c.id === editingCategoryId);
-        if (index !== -1) categories[index] = { ...categories[index], name, icon: selectedEmoji, color: selectedColor };
+        if (index !== -1) categories[index] = { ...categories[index], name, icon: selectedEmoji };
       } else {
-        categories.push({ id: generateId(), name, icon: selectedEmoji, color: selectedColor });
+        categories.push({ id: generateId(), name, icon: selectedEmoji });
       }
 
       saveData();
@@ -2687,6 +2734,7 @@ const defaultIconSvg = '🌍'
       document.getElementById('batchDeleteBtn').style.display = isBatchMode ? 'inline-block' : 'none';
       document.getElementById('batchEditIconBtn').style.display = isBatchMode ? 'inline-block' : 'none';
       document.getElementById('batchSetCategoryBtn').style.display = isBatchMode ? 'inline-block' : 'none';
+      document.getElementById('batchSetColorBtn').style.display = isBatchMode ? 'inline-block' : 'none';
       document.getElementById('batchCancelBtn').style.display = isBatchMode ? 'inline-block' : 'none';
       document.getElementById('batchToolbar').style.display = isBatchMode ? 'flex' : 'none';
       selectedFavorites.clear();
@@ -2800,6 +2848,42 @@ const defaultIconSvg = '🌍'
       renderFavorites();
     }
 
+    let batchSelectedColor = COLORS[0];
+
+    function openBatchColorModal() {
+      if (selectedFavorites.size === 0) return;
+      batchSelectedColor = COLORS[0];
+      renderBatchColorPicker();
+      document.getElementById('batchColorModal').classList.add('active');
+    }
+
+    function renderBatchColorPicker() {
+      const picker = document.getElementById('batchColorPicker');
+      picker.innerHTML = COLORS.map(color => `
+        <div class="color-option ${color === batchSelectedColor ? 'selected' : ''}" data-color="${color}" style="background: ${color};"></div>
+      `).join('');
+
+      document.querySelectorAll('#batchColorPicker .color-option').forEach(option => {
+        option.addEventListener('click', () => {
+          batchSelectedColor = option.dataset.color;
+          renderBatchColorPicker();
+        });
+      });
+    }
+
+    function saveBatchColor() {
+      favorites = favorites.map(f => {
+        if (selectedFavorites.has(f.id)) {
+          return { ...f, color: batchSelectedColor };
+        }
+        return f;
+      });
+      saveData();
+      document.getElementById('batchColorModal').classList.remove('active');
+      toggleBatchMode();
+      renderFavorites();
+    }
+
     document.getElementById('batchManageBtn').addEventListener('click', toggleBatchMode);
     document.getElementById('batchCancelBtn').addEventListener('click', toggleBatchMode);
     document.getElementById('batchDeleteBtn').addEventListener('click', batchDelete);
@@ -2860,6 +2944,11 @@ const defaultIconSvg = '🌍'
     document.getElementById('batchIconModalClose').addEventListener('click', () => document.getElementById('batchIconModal').classList.remove('active'));
     document.getElementById('batchIconModalCancel').addEventListener('click', () => document.getElementById('batchIconModal').classList.remove('active'));
     document.getElementById('batchIconModalSave').addEventListener('click', saveBatchIcon);
+
+    document.getElementById('batchSetColorBtn').addEventListener('click', openBatchColorModal);
+    document.getElementById('batchColorModalClose').addEventListener('click', () => document.getElementById('batchColorModal').classList.remove('active'));
+    document.getElementById('batchColorModalCancel').addEventListener('click', () => document.getElementById('batchColorModal').classList.remove('active'));
+    document.getElementById('batchColorModalSave').addEventListener('click', saveBatchColor);
 
     document.getElementById('searchInput').addEventListener('input', renderFavorites);
     document.getElementById('sortBtn').addEventListener('click', toggleSortMode);

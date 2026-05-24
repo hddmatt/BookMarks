@@ -1,4 +1,4 @@
-# 收藏夹管理器 (Bookmarks Manager)
+# 收藏夹管理器 (BookMarks)
 
 一个基于 Express + JSON 文件存储的书签管理应用，支持分类管理、批量操作、图标自定义等功能。
 

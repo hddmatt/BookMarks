@@ -25,9 +25,7 @@ function getClientIP(req) {
 
 function cleanExpiredTokens() {
   const now = Date.now();
-  if (db.authTokens && Array.isArray(db.authTokens)) {
-    db.authTokens = db.authTokens.filter(t => t.expires_at > now);
-  }
+  db.authTokens = db.authTokens.filter(t => t.expires_at > now);
   Object.keys(loginAttempts).forEach(ip => {
     if (loginAttempts[ip].until && loginAttempts[ip].until <= now) {
       delete loginAttempts[ip];

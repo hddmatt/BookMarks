@@ -1,0 +1,11 @@
+services:
+  bookmarks:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8010:8010"
+    volumes:
+      - ./backend/bookmarks.json:/app/bookmarks.json
+      - ./backend/backups:/app/backups
+    restart: unless-stopped
